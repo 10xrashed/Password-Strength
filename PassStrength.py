@@ -39,12 +39,15 @@ def check_sequential(password):
     sequences = ["abcdefghijklmnopqrstuvwxyz", "0123456789", "qwertyuiop", "asdfghjkl", "zxcvbnm"]
     lower = password.lower()
     for seq in sequences:
-        for i in range(len(seq) - 2):
-            if seq[i:i+3] in lower:
-                return True
+        for s in (seq, seq[::-1]):
+            for i in range(len(s) - 2):
+                if s[i:i+3] in lower:
+                    return True
     return False
 
 def estimate_crack_time(password):
+    if not password:
+        return "instantly"
     charset = 0
     if any(c.islower() for c in password): charset += 26
     if any(c.isupper() for c in password): charset += 26
@@ -86,8 +89,7 @@ def analyze_password(password):
     if is_common:     rate -= 2
     if repeated:      rate -= 1
     if sequential:    rate -= 1
-
-    rate = max(0, min(rate, 7))
+    rate = max(0, min(rate, 6))
 
     if rate <= 2:
         score = "Very Weak"
@@ -113,7 +115,7 @@ def analyze_password(password):
     warnings = []
     if is_common:   warnings.append("  [!] This is a commonly used password")
     if repeated:    warnings.append("  [!] Contains repeated characters (e.g. aaa)")
-    if sequential:  warnings.append("  [!] Contains sequential patterns (e.g. abc, 123)")
+    if sequential:  warnings.append("  [!] Contains sequential patterns (e.g. abc, 123, cba, 321)")
     if length < 8:  warnings.append("  [!] Password is too short (minimum 8 characters)")
 
     suggestions = []
@@ -127,7 +129,7 @@ def analyze_password(password):
     print("         PASSWORD ANALYSIS REPORT")
     print("=" * 50)
     print(f"  Strength  : {bar} {score}")
-    print(f"  Rating    : {rate} / 7")
+    print(f"  Rating    : {rate} / 6")  
     print(f"  Length    : {length} characters")
     print("-" * 50)
     print(f"  Uppercase : {'Yes' if up else 'No'}")
@@ -189,13 +191,15 @@ def generate_wordlist(word, year):
         variations.append(word + s + year)
         variations.append(word.capitalize() + s)
 
+    unique_variations = set(variations)
+
     filename = f"wordlist_{word}.txt"
     with open(filename, "w") as f:
-        for v in set(variations):
+        for v in unique_variations:
             f.write(v + "\n")
 
     print(f"\n  [+] Wordlist saved to: {filename}")
-    print(f"  [+] Total entries    : {len(set(variations))}")
+    print(f"  [+] Total entries    : {len(unique_variations)}")
 
 while True:
     password = input("Enter password to check (or press Enter to generate one): ").strip()
